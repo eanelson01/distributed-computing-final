@@ -59,6 +59,7 @@ nbclient
 nbconvert
 nbformat
 nest-asyncio
+nfl-data-py
 notebook
 notebook_shim
 numpy
