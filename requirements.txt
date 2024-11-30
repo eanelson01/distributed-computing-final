@@ -28,6 +28,7 @@ fastjsonschema
 fonttools
 fqdn
 idna
+imbalanced-learn
 importlib-metadata
 importlib-resources
 ipykernel
@@ -59,7 +60,7 @@ nbclient
 nbconvert
 nbformat
 nest-asyncio
-nfl-data-py
+nfl_data_py
 notebook
 notebook_shim
 numpy
@@ -73,6 +74,7 @@ pickleshare
 Pillow
 pkgutil_resolve_name
 platformdirs
+plotly
 ply==3.11
 prometheus-client
 prompt-toolkit
@@ -94,6 +96,7 @@ requests
 rfc3339-validator
 rfc3986-validator
 rpds-py
+seaborn
 scipy
 Send2Trash
 sip
