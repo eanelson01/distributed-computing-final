@@ -8,7 +8,7 @@ import pandas as pd
 from imblearn.combine import SMOTEENN
 from pyspark.sql import functions as F
 
-def GetSparkDF(undersample = True):
+def GetSparkDF(include_undersample = True):
     '''
 
     A function to import the data and crate a Spark Data Frame for traning. This is to keep consistency across each model.
@@ -88,7 +88,7 @@ def GetSparkDF(undersample = True):
     ohe_col_vec = ["home_team_vec", "away_team_vec", "season_type_vec", "posteam_vec", "posteam_type_vec", "defteam_vec",
                       "side_of_field_vec", "game_half_ivec", "season_vec", 'roof_vec', 'surface_vec']
 
-    if undersample:
+    if include_undersample:
         # Convert PySpark DataFrame to pandas DataFrame
         pandas_df = train_df.toPandas()
 
@@ -143,9 +143,11 @@ def GetSparkDF(undersample = True):
         pandas_df.drop("play_type", axis=1, inplace=True)
         
         # Convert back to PySpark DataFrame
-        train_df = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
+        train_df_undersample = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
+    else:
+        train_df_undersample = None
 
-    return spark, train_df, test_df
+    return (spark, train_df, test_df, train_df_undersample)
 
     
     
