@@ -7,7 +7,7 @@ from imblearn.over_sampling import SMOTENC
 import pandas as pd
 from imblearn.combine import SMOTEENN
 
-def GetSparkDF():
+def GetSparkDF(undersample = True):
     '''
 
     A function to import the data and crate a Spark Data Frame for traning. This is to keep consistency across each model.
@@ -27,12 +27,13 @@ def GetSparkDF():
     
     # removing game_date, removing time
     # play_type is the predictor col
+    # columns to add: wind, temp, roof, qb_epa?, surface, 
     cols = ["home_team", "away_team", "season_type", "week", "posteam", "posteam_type", 
             "defteam", "side_of_field", "yardline_100", "quarter_seconds_remaining", 
             "half_seconds_remaining", "game_seconds_remaining" , "game_half", "down", 
             "drive", "qtr",  "ydstogo", "play_type", "posteam_timeouts_remaining", 
             "defteam_timeouts_remaining", "posteam_score", "defteam_score", "score_differential", 
-            "ep", "epa", "season"]
+            "ep", "epa", "season", 'wind', 'temp', 'roof', 'surface']
     
     #TODO add weather to col
     
@@ -72,63 +73,60 @@ def GetSparkDF():
     test_df = spark_df.subtract(train_df)
 
     str_col = ["home_team", "away_team", "season_type", "posteam", "posteam_type", "defteam", "side_of_field", "game_half",
-            "play_type", "season"]
+            "play_type", "season", 'roof', 'surface']
     str_col_output = ["home_team_idx", "away_team_idx", "season_type_idx", "posteam_idx", "posteam_type_idx", "defteam_idx",
-                      "side_of_field_idx", "game_half_idx", "play_type_idx", "season_idx"]
+                      "side_of_field_idx", "game_half_idx", "play_type_idx", "season_idx", 'roof_idx', 'surface_idx']
     ohe_col_input = ["home_team_idx", "away_team_idx", "season_type_idx", "posteam_idx", "posteam_type_idx", "defteam_idx",
-                      "side_of_field_idx", "game_half_idx", "season_idx"]
+                      "side_of_field_idx", "game_half_idx", "season_idx", 'roof_idx', 'surface_idx']
     ohe_col_vec = ["home_team_vec", "away_team_vec", "season_type_vec", "posteam_vec", "posteam_type_vec", "defteam_vec",
-                      "side_of_field_vec", "game_half_ivec", "season_vec"]
+                      "side_of_field_vec", "game_half_ivec", "season_vec", 'roof_vec', 'surface_vec']
 
-    # Convert PySpark DataFrame to pandas DataFrame
-    pandas_df = train_df.toPandas()
+    if undersample:
+        # Convert PySpark DataFrame to pandas DataFrame
+        pandas_df = train_df.toPandas()
+        
+        # Undersample the data
+        rus = RandomUnderSampler(sampling_strategy='majority', random_state=42)
     
+        X_resampled, y_resampled = rus.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
+        
+        pandas_df.drop("play_type", axis=1, inplace=True)
+        
+        # Convert back to PySpark DataFrame
+        undersampled_df = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
     
-    # Undersample the data
-    rus = RandomUnderSampler(sampling_strategy='majority', random_state=42)
+        # Convert PySpark DataFrame to pandas DataFrame
+        pandas_df = undersampled_df.toPandas()
     
+        # Undersample the data
+        rus2 = RandomUnderSampler(sampling_strategy='majority', random_state=42)
+        
+        X_resampled, y_resampled = rus2.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
+        
+        pandas_df.drop("play_type", axis=1, inplace=True)
+        
+        # Convert back to PySpark DataFrame
+        undersampled_df2 = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
     
-    X_resampled, y_resampled = rus.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
+        str_col2 = ["home_team", "away_team", "season_type", "posteam", "posteam_type", "defteam", "side_of_field", "game_half", "season"]
+        
+        # Convert PySpark DataFrame to pandas DataFrame
+        pandas_df = undersampled_df2.toPandas()
+        pandas_df2 = pandas_df.copy()
+        pandas_df2.drop("play_type", axis=1, inplace=True)
     
-    pandas_df.drop("play_type", axis=1, inplace=True)
+        categorical_indices = [pandas_df2.columns.get_loc(col) for col in str_col2]
     
-    # Convert back to PySpark DataFrame
-    undersampled_df = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
+        # Define SMOTENC with indices of categorical columns
+        smote_enn = SMOTENC(categorical_features=categorical_indices, random_state=42)
+        #X_resampled, y_resampled = rus.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
+        X_resampled, y_resampled = smote_enn.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
+        pandas_df.drop("play_type", axis=1, inplace=True)
+        
+        # Convert back to PySpark DataFrame
+        train_df = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
 
-    # Convert PySpark DataFrame to pandas DataFrame
-    pandas_df = undersampled_df.toPandas()
-
-
-    # Undersample the data
-    rus2 = RandomUnderSampler(sampling_strategy='majority', random_state=42)
-    
-    
-    X_resampled, y_resampled = rus2.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
-    
-    pandas_df.drop("play_type", axis=1, inplace=True)
-    
-    # Convert back to PySpark DataFrame
-    undersampled_df2 = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
-
-    str_col2 = ["home_team", "away_team", "season_type", "posteam", "posteam_type", "defteam", "side_of_field", "game_half", "season"]
-    
-    # Convert PySpark DataFrame to pandas DataFrame
-    pandas_df = undersampled_df2.toPandas()
-    pandas_df2 = pandas_df.copy()
-    pandas_df2.drop("play_type", axis=1, inplace=True)
-
-    categorical_indices = [pandas_df2.columns.get_loc(col) for col in str_col2]
-
-    # Define SMOTENC with indices of categorical columns
-    smote_enn = SMOTENC(categorical_features=categorical_indices, random_state=42)
-    #X_resampled, y_resampled = rus.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
-    X_resampled, y_resampled = smote_enn.fit_resample(pandas_df.drop("play_type", axis=1), pandas_df["play_type"])
-    pandas_df.drop("play_type", axis=1, inplace=True)
-    
-    # Convert back to PySpark DataFrame
-    undersampled_df3 = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
-
-    return spark, undersampled_df3, test_df
+    return spark, train_df, test_df
 
     
     
