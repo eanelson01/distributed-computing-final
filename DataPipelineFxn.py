@@ -6,6 +6,7 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTENC
 import pandas as pd
 from imblearn.combine import SMOTEENN
+from pyspark.sql import functions as F
 
 def GetSparkDF(undersample = True):
     '''
@@ -52,7 +53,7 @@ def GetSparkDF(undersample = True):
     spark_df = spark.createDataFrame(forth_down)
 
     # remove nulls
-    spark_df = spark_df.where(col("play_type").isNotNull())
+    spark_df = spark_df.where(col("play_type").isNotNull() & col('temp').isNotNull() & col('wind').isNotNull())
 
     # removing QB kneel
     spark_df = spark_df.where(col("play_type") != "qb_kneel")
@@ -68,8 +69,14 @@ def GetSparkDF(undersample = True):
     
     # get the sample
     train_df = spark_df.sampleBy("play_type", fractions=fractions, seed=42)
+
+    # find the mean for mean imputation
+    temp_mean = train_df.select(col('temp')).filter(~F.isnan('temp')).agg(F.mean('temp')).collect()[0][0]
+
+    # fill the nan values for temp and wind
+    train_df = train_df.na.fill({'wind': 0, 'temp': temp_mean})
     
-    # remove sample to form the test
+    # remove sample from the test
     test_df = spark_df.subtract(train_df)
 
     str_col = ["home_team", "away_team", "season_type", "posteam", "posteam_type", "defteam", "side_of_field", "game_half",
@@ -84,6 +91,18 @@ def GetSparkDF(undersample = True):
     if undersample:
         # Convert PySpark DataFrame to pandas DataFrame
         pandas_df = train_df.toPandas()
+
+        # find where wind and temp are not nan
+        wind_null_idx = pandas_df['wind'].isnull()
+        temp_null_idx = pandas_df['temp'].isnull()
+
+        # impute with 0 for wind and mean for temperature
+        # when dome, the wind and temp are NaN
+        pandas_df[wind_null_idx]['wind'] = 0
+        pandas_df[temp_null_idx]['temp'] = round(pandas_df[~temp_null_idx]['temp'].mean(), 2)
+        
+        # sample down
+        # pandas_df = pandas_df[wind_idx & temp_idx]
         
         # Undersample the data
         rus = RandomUnderSampler(sampling_strategy='majority', random_state=42)
@@ -108,7 +127,7 @@ def GetSparkDF(undersample = True):
         # Convert back to PySpark DataFrame
         undersampled_df2 = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
     
-        str_col2 = ["home_team", "away_team", "season_type", "posteam", "posteam_type", "defteam", "side_of_field", "game_half", "season"]
+        str_col2 = ["home_team", "away_team", "season_type", "posteam", "posteam_type", "defteam", "side_of_field", "game_half", "season", 'roof', 'surface']
         
         # Convert PySpark DataFrame to pandas DataFrame
         pandas_df = undersampled_df2.toPandas()
