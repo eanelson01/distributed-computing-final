@@ -15,6 +15,7 @@ def GetSparkDF():
     Outputs:
         spark: The spark session
         undersampled_df3: The pyspark data frame to be used for testing
+        test_df: The testing data frame to do testing on.
     
     '''
 
@@ -127,7 +128,7 @@ def GetSparkDF():
     # Convert back to PySpark DataFrame
     undersampled_df3 = spark.createDataFrame(pd.DataFrame(X_resampled, columns=pandas_df.columns).assign(play_type=y_resampled))
 
-    return spark, undersampled_df3
+    return spark, undersampled_df3, test_df
 
     
     
