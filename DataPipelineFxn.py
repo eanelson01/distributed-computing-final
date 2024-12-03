@@ -149,6 +149,74 @@ def GetSparkDF(include_undersample = True):
 
     return (spark, train_df, test_df, train_df_undersample)
 
+def GetBaseDataFrame():
+    '''
+
+    A function to get the data in a Pandas framework so that we can do EDA before modeling.
+
+    '''
+    
+    years = []
+    
+    # loop through years from 2000 to 2023
+    for i in range(2000,2024):
+        years.append(i)
+    
+    # removing game_date, removing time
+    # play_type is the predictor col
+    # columns to add: wind, temp, roof, qb_epa?, surface, 
+    cols = ["home_team", "away_team", "season_type", "week", "posteam", "posteam_type", 
+            "defteam", "side_of_field", "yardline_100", "quarter_seconds_remaining", 
+            "half_seconds_remaining", "game_seconds_remaining" , "game_half", "down", 
+            "drive", "qtr",  "ydstogo", "play_type", "posteam_timeouts_remaining", 
+            "defteam_timeouts_remaining", "posteam_score", "defteam_score", "score_differential", 
+            "ep", "epa", "season", 'wind', 'temp', 'roof', 'surface']
+    
+    #TODO add weather to col
+    
+    data = nfl.import_pbp_data(years, downcast=False, cache=False, alt_path=None)
+
+    # get the desired columns
+    reduced_data = data.filter(items=cols) 
+
+    # select only where there are 4th downs
+    forth_down = reduced_data.query("down==4.0")
+
+    # set up the session
+    spark = SparkSession.builder.getOrCreate()
+    
+    # Convert to PySpark DataFrame
+    spark_df = spark.createDataFrame(forth_down)
+
+    # remove nulls
+    spark_df = spark_df.where(col("play_type").isNotNull() & col('temp').isNotNull() & col('wind').isNotNull())
+
+    # removing QB kneel
+    spark_df = spark_df.where(col("play_type") != "qb_kneel")
+
+    # out sampling fractions
+    fractions = {
+        "field_goal": 0.6,
+        "no_play": 0.6,
+        "run": 0.6,
+        "punt": 0.4,
+        "pass": 0.6
+    }
+    
+    # get the sample
+    train_df = spark_df.sampleBy("play_type", fractions=fractions, seed=42)
+
+    # find the mean for mean imputation
+    temp_mean = train_df.select(col('temp')).filter(~F.isnan('temp')).agg(F.mean('temp')).collect()[0][0]
+
+    # fill the nan values for temp and wind
+    train_df = train_df.na.fill({'wind': 0, 'temp': temp_mean})
+    
+    # remove sample from the test
+    test_df = spark_df.subtract(train_df)
+
+    return train_df
+
     
     
     
