@@ -55,6 +55,9 @@ def GetSparkDF(include_undersample = True):
     # remove nulls
     spark_df = spark_df.where(col("play_type").isNotNull() & col('temp').isNotNull() & col('wind').isNotNull())
 
+    for field in spark_df.schema.fields:
+        spark_df = spark_df.where(col(field.name).isNotNull())
+
     # removing QB kneel
     spark_df = spark_df.where(col("play_type") != "qb_kneel")
 
