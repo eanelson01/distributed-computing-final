@@ -12,9 +12,13 @@ This is a repository for the UVA SDS Distributed Computing final project. The co
 ### Creating Models:
 
 * [logistic_regression.ipynb](logistic_regression.ipynb): A notebook to develop the logistic regression model.
+* [logistic_regression_2023_test_set.ipynb](llogistic_regression_2023_test_set.ipynb): A notebook to develop the logistic regression model without class balancing and test on the 2023 Season.
 * [random_forest.ipynb](random_forest.ipynb): A notebook to develop the random forest model without class balancing.
 * [random_forest_undersmapling.ipynb](random_forest_undersmapling.ipynb): A notebook to develop the random forest model with class balancing.
+* [random_forest_2023_test_set.ipynb](random_forest_2023_test_set.ipynb): A notebook to develop the random forest model without class balancing and test on the 2023 Season.
 * [NaiveBayes.ipynb](NaiveBayes.ipynb): A notebook to develop the Naive Bayes model with and wihtout class balancing.
+* [NaiveBayes_2023_test_set.ipynb](NaiveBayes_2023_test_set.ipynb): A notebook to develop the Naive Bayes model wihtout class balancing and test on the 2023 season.
+
 
 ### Miscelanous Files:
 
