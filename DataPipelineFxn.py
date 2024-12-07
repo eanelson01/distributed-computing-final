@@ -8,7 +8,7 @@ import pandas as pd
 from imblearn.combine import SMOTEENN
 from pyspark.sql import functions as F
 
-def GetSparkDF(include_undersample = True):
+def GetSparkDF(end_year = 2024, include_undersample = True):
     '''
 
     A function to import the data and crate a Spark Data Frame for traning. This is to keep consistency across each model.
@@ -23,7 +23,7 @@ def GetSparkDF(include_undersample = True):
     years = []
     
     # loop through years from 2000 to 2023
-    for i in range(2000,2024):
+    for i in range(2000,end_year):
         years.append(i)
     
     # removing game_date, removing time
@@ -219,6 +219,40 @@ def GetBaseDataFrame():
     test_df = spark_df.subtract(train_df)
 
     return train_df
+
+def get_2023_season_test_df():
+    cols = ["home_team", "away_team", "season_type", "week", "posteam", "posteam_type", 
+        "defteam", "side_of_field", "yardline_100", "quarter_seconds_remaining", 
+        "half_seconds_remaining", "game_seconds_remaining" , "game_half", "down", 
+        "drive", "qtr",  "ydstogo", "play_type", "posteam_timeouts_remaining", 
+        "defteam_timeouts_remaining", "posteam_score", "defteam_score", "score_differential", 
+        "ep", "epa", "season", 'wind', 'temp', 'roof', 'surface']
+
+
+    data = nfl.import_pbp_data([2023], downcast=False, cache=False, alt_path=None)
+
+    # get the desired columns
+    reduced_data = data.filter(items=cols) 
+
+    # select only where there are 4th downs
+    forth_down = reduced_data.query("down==4.0")
+
+    # set up the session
+    spark = SparkSession.builder.getOrCreate()
+
+    # Convert to PySpark DataFrame
+    test_df_2023 = spark.createDataFrame(forth_down)
+
+    # remove nulls
+    test_df_2023 = test_df_2023.where(col("play_type").isNotNull() & col('temp').isNotNull() & col('wind').isNotNull())
+
+    for field in test_df_2023.schema.fields:
+        test_df_2023 = test_df_2023.where(col(field.name).isNotNull())
+
+    # removing QB kneel
+    test_df_2023 = test_df_2023.where(col("play_type") != "qb_kneel")
+    
+    return test_df_2023
 
     
     
