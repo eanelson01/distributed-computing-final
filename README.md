@@ -1,5 +1,5 @@
 # UVA DS 7200: Distributed Computing Final Project
-## Group Members: Clarence Williams, Lingzhen Zhu, Ethan Nelson
+## Group Members: Clarence Williams (dnh9rs), Lingzhen Zhu (qrb2gn), Ethan Nelson (ean8fr)
 
 This is a repository for the UVA SDS Distributed Computing final project. The code for the project is split into multiple .py and .ipynb files. The table of contents of the files is listed below:
 
