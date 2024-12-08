@@ -22,7 +22,7 @@ This is a repository for the UVA SDS Distributed Computing final project. The co
 
 ### Miscelanous Files:
 
-*[exploratory-data-analysis.ipynb](exploratory-data-analysis.ipynb): An empty file that was initially created to look at the data, but the purpose was replaced with [eda-notebook.ipynb](eda-notebook.ipynb).
+* [exploratory-data-analysis.ipynb](exploratory-data-analysis.ipynb): An empty file that was initially created to look at the data, but the purpose was replaced with [eda-notebook.ipynb](eda-notebook.ipynb).
 * [final_proj_rf.ipynb](final_proj_rf.ipynb): An initial file to test the random forest, but this file is superceded by [random_forest.ipynb](random_forest.ipynb).
 * [MLP.ipynb](MLP.ipynb): An attempt to create a Multilayer Perceptron model, that was not completed and can be ignored.
 * [Untitled.ipynb](Untitled.ipynb): An empty file that can be ignored. 
