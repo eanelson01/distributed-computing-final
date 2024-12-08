@@ -3,6 +3,10 @@
 
 This is a repository for the UVA SDS Distributed Computing final project. The code for the project is split into multiple .py and .ipynb files. The table of contents of the files is listed below:
 
+### Final Paper:
+
+* [distributed-computing-final-report.pdf](distributed-computing-final-report.pdf): The PDF of our final project report, providing insight on the whole project. 
+
 ### Model Pipeline:
 
 * [final_proj.ipynb](final_proj.ipynb): The first file we created to develop the model pipeline. Also includes the beginning code for logistic regression.
